@@ -1,0 +1,425 @@
+using System;
+namespace final
+{
+class Program
+{
+ static void Main(string[] args) //玩家、洗牌、
+電腦
+ {
+ Console.WriteLine("請問要多少人遊戲？(包括自己)");
+ int seat = int.Parse(Console.ReadLine());
+ Table table = new Table(seat);
+ Player[] player = new Player[seat];
+ Human human = new Human(); //改
+ int i;
+ Newgame(player, table, human); //改
+ do
+ {
+ if (player[0].Turn == 0)
+ { //輪到玩家 0 出牌才顯示他的牌
+ Console.WriteLine();
+ for (i = 0; i < 5; i++)
+ {
+ player[0].Handcards[i].Show();
+ }
+ }
+ Console.WriteLine("排疊總和是" + table.Sum);
+ Console.WriteLine();
+ table.turn(player, table, human);
+ //Console.ReadLine();
+ } while (table.Sum <= 99);
+ Console.WriteLine("GG");
+ Console.ReadLine();
+ }
+ static void Newgame(Player[] player, Table table, Human human)
+ { //新遊戲 //改
+
+int s = table.Seats;
+ int i, j;
+table.NewCardStack();
+ for (i = 0; i < s; i++)
+ { //改
+ if (i == 0)
+ {
+ player[i] = human;
+ }
+ else
+ {
+ player[i] = new Player(); //建構玩
+家
+ }
+ player[i].Turn = i;
+ for (j = 0; j < 5; j++)
+ { //發牌
+ player[i].Handcards[j] = new Card(0); //牌也要一張張
+ player[i].Getacard(j, table);
+ }
+ }
+ table.Sum = 0;
+ }
+}
+}
+
+
+using System;
+namespace final
+{
+class Card:IComparable
+{
+ private int card; // 0 到 51
+ private int point;
+ public Card(int card)
+ {
+ this.card = card;
+ }
+ public int Getcard
+ {
+ set { card = value; }
+ get { return card; }
+ }
+ public int Getcardpoint
+ {
+ get { return card; }
+ }
+ public void Show()
+ { //牌輸出
+ if (card / 13 == 0)
+ {
+ Console.Write("黑桃" + (card % 13 + 1) + "\t");
+//0 到 12
+ }
+ else if (card / 13 == 1)
+ {
+ Console.Write("紅心" + (card % 13 + 1) + "\t");
+//13 到 25
+ }
+ else if (card / 13 == 2)
+ {
+ Console.Write("菱形" + (card % 13 + 1) + "\t");
+//26 到 38
+ }
+ else
+ {
+ Console.Write("梅花" + (card % 13 + 1) + "\t");
+//39 到 51
+ }
+ }
+ public void function(int card, Table table, Player[]
+player,Human human)
+ { //每張牌的作用
+ Random rand = new Random();
+ int r = (rand.Next() % 2) * 2 - 1;
+ if (table.Sum < 20)
+ { //+-10 或 20 不能讓值出現負號
+ r = 1;
+ }
+ if (table.Sum > 79)
+ {
+ r = -1;
+ }
+ int i;
+ if (card == 0)
+ { //黑桃 A 歸零
+ table.Sum = 0;
+ table.next(player, table);
+ Console.WriteLine("歸零發動");
+ }
+ else if (card % 13 == 3)
+ { //迴轉
+ for (i = 0; i < table.Seats; i++)
+ {
+ player[i].Turn = player[i].Turn * (-1) +
+table.Seats;
+ }
+ table.next(player, table);
+ Console.WriteLine("迴轉發動");
+ }
+ else if (card % 13 == 4)
+ {
+ int assign;
+//
+ if (player[0].Turn == 0)
+ {
+ assign = player[human.Assign(table.Seats) - 1].Turn;
+ }
+ else
+ {
+ assign = player[(rand.Next() % table.Seats)].Turn;
+ }
+ int p = 0;
+ for (i = 0; i < table.Seats; i++)
+ {
+ player[i].Turn += -assign;
+ if (player[i].Turn == 0)
+ {
+ p = i;
+ }
+ if (player[i].Turn < 0)
+ {
+ player[i].Turn += table.Seats;
+ }
+ }
+ Console.WriteLine("指定玩家" + (p + 1));
+ }
+ else if (card % 13 == 9)
+ { //+-10
+ if (player[0].Turn == 0 & table.Sum > 10)
+ { //改
+ r = human.R();
+ }
+ table.next(player, table);
+ table.Sum += (10 * r);
+ Console.WriteLine();
+ }
+ else if (card % 13 == 10)
+ { //pass
+ table.next(player, table);
+ Console.WriteLine("pass");
+ }
+ else if (card % 13 == 11)
+ { //+-20
+ if (player[0].Turn == 0 & table.Sum > 20)
+ { //改
+ r = human.R();
+ }
+ table.next(player, table);
+ table.Sum += (20 * r);
+ Console.WriteLine();
+ }
+ else if (card % 13 == 12)
+ { //99
+ table.Sum = 99;
+ table.next(player, table);
+ Console.WriteLine("九九");
+ }
+ else
+ { //其
+他加法
+ table.Sum += (card % 13 + 1);
+ table.next(player, table);
+ Console.WriteLine();
+ }
+ }
+ public void cpuntpoint()
+ {
+ if (this.card == 0 | this.card % 13 == 3 | this.card % 13
+== 4 | this.card % 13 == 9 | this.card % 13 == 10 | this.card % 13 ==
+11 | this.card % 13 == 12) this.point = 0;
+ else this.point = (this.card % 13) + 1;//
+ }
+ public int CompareTo(object obj)
+ {
+ Card tobeCompared = (Card)obj;
+ if (this.point > tobeCompared.point)
+ return 1;
+ else if (this.point == tobeCompared.point)
+ return 0;
+ else return -1;
+ }
+}
+}
+
+
+using System;
+namespace final
+{
+class Human : Player
+{ //
+ public int Used()
+ {
+ int used;
+ do
+ {
+ Console.WriteLine("請問要出由左到右第幾張牌？(請輸入 1 到
+5)");
+ used = int.Parse(Console.ReadLine());
+ } while (used >= 6);
+ return used;
+ }
+ public int Assign(int seat)
+ {
+ int assign;
+ do
+ {
+ Console.WriteLine("請問要指定哪位玩家？(數字編號)");
+ assign = int.Parse(Console.ReadLine());
+ } while (assign > seat & assign != 1);
+ return assign;
+ }
+ public int R()
+ {
+ char a;
+ int r = 0;
+ do
+ {
+ Console.WriteLine("請問要加(輸入 p)？還是減(輸入 m)");
+ a = Console.ReadLine().ToCharArray()[0];
+ switch (a)
+ {
+ case 'p':
+ r = 1;
+ break;
+ case 'm':
+ r = -1;
+ break;
+ default:
+ Console.WriteLine("請輸入 p 或 m");
+ r = 0;
+ break;
+ }
+ } while (r == 0);
+ return r;
+ }
+}
+}
+
+
+using System;
+namespace final
+{
+class Player
+{
+ private Card[] handcards = new Card[5]; //手牌
+ public Card[] Handcards
+ {
+ set { handcards = value; }
+ get { return handcards; }
+ }
+ private int turn; //出牌順
+ public int Turn
+ {
+ set { turn = value; }
+ get { return turn; }
+ }
+ public void Getacard(int i, Table table)
+ { //玩家取牌
+
+ Card h = new Card(table.Stack[table.N_Used]); //牌一張張建
+構//這行出事代表用完一副牌了，再洗牌還沒寫(牌疊的 index 超過 51)
+ table.N_Used++;
+ handcards[i] = h;
+ if (table.N_Used == 52)
+ { //如果卡組抽完則重新洗牌繼續抽
+ table.NewCardStack();
+ table.N_Used = 0;
+ }
+ }
+ public int Playcard(int sum) //電腦出牌 輸入現在總點數
+ {
+ int end = 0; //預設出第一張
+ for (int i = 0; i <= 4; ++i)
+ {
+ this.handcards[i].cpuntpoint();
+ }
+ Array.Sort(this.handcards);
+ for (int i = 4; i >= 0;--i) //計算點數如果有個好的出法則
+換出最好那張
+ {
+ if ((this.handcards[i].Getcardpoint + sum) < 99) end
+= i; break;
+ }
+ return end;
+ }
+}
+}
+
+
+using System;
+namespace final
+{
+class Table
+{
+ private int seats; //玩家數
+ private int n_used = 0; //從取牌堆拿了多少牌
+ private int sum; //丟出的牌值總和
+ public Table(int seats)
+ {
+ this.seats = seats;
+ }
+ public int Seats
+ {
+ get { return seats; }
+ }
+ public int Sum
+ {
+ set { sum = value; }
+ get { return sum; }
+ }
+ public int N_Used
+ {
+ set { n_used = value; }
+ get { return n_used; }
+ }
+ private int[] stack = new int[52]; //取牌堆
+ public int[] Stack
+ {
+ get { return stack; }
+ }
+ public void NewCardStack()
+ { //洗牌
+ int i, j, k;
+ int l;
+ int[] space = new int[52];
+ bool unfound;
+ Random rand = new Random();
+ for (i = 0; i < 52; i++)
+ {
+ space[i] = i; //spaceu 有 0 到 51，
+準備指派給 stack
+ }
+ for (j = 0; j < 52; j++)
+ {
+ do
+ {
+ unfound = true;
+ l = rand.Next() % 52;
+ for (k = 0; k < 52; k++)
+ {
+ if (l == space[k])
+ { //從 space 找還沒指派的值(牌)，取出
+ space[k] = 100;
+ unfound = false;
+ break;
+ }
+ }
+ } while (unfound);
+ stack[j] = l; //給取牌堆 stack
+ }
+ }
+ public void turn(Player[] player, Table table, Human human)
+ { //處理玩家出牌會發生甚麼(牌功能+順序) //改
+ int i;
+ int n = 0;
+ if (player[0].Turn == 0)
+ { //改 n
+ n = human.Used() - 1;
+ }
+ for (i = 0; i < seats; i++)
+ {
+ if (player[i].Turn == 0)
+ {
+ if (i > 0) n = player[i].Playcard(table.Sum);
+ Console.Write("玩家" + (i + 1) + "出了");
+ player[i].Handcards[n].Show();
+
+player[i].Handcards[n].function(player[i].Handcards[n].Getcard,
+table, player, human);
+ player[i].Getacard(n, table);
+ break;
+ }
+ }
+ }
+ public void next(Player[] player, Table table)
+ { //沒有指定、迴轉情況下，出牌順序順延
+ int i;
+ for (i = 0; i < table.Seats; i++)
+ {
+ player[i].Turn += -1;
+ if (player[i].Turn == -1)
+ { //剛出完，順序跑到最後
+ player[i].Turn += table.Seats;
+ }
+ }
+ }
+}
+}
