@@ -1,0 +1,207 @@
+#1. program.cs
+using System;
+
+namespace HW2
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            Console.WriteLine("加密請按1,解密請按2");  //輸入加密或解密
+            string c = Console.ReadLine() ;
+            
+            ASCII text1 = new ASCII("1"); //設定初直
+            ASCII text2 = new ASCII("1");   
+            bool e = false;
+            bool r = false;
+            string b = "1";
+            string a ="1";
+            
+            while(e==false) //檢查輸入的字串中是否含有非英文字的符號，若有則重新輸入
+            {
+            Console.WriteLine("請輸入一些英文字母");
+            a = Console.ReadLine() ;
+            text1 = new ASCII(a);
+            text1.ToASCII();
+            e = IfError.iferror(text1.Ascii);
+            }                                                          
+            
+            while(r==false)   //檢查Key中是否含有非英文字的符號，若有則重新輸入
+            {
+            Console.WriteLine("請輸入另一個英文字母"); 
+            b = Console.ReadLine();
+            text2 = new ASCII(repkey(a,b));  //呼叫涵式repkey將key重複至與明文一樣長
+            text2.ToASCII();
+            r = IfError.iferror(text2.Ascii);
+            }
+            
+            text2.KeyToASCII();                                                
+            
+            WordtoCode post = new WordtoCode(text1.Ascii,text2.Ascii1);
+            if (c == "1")  //加密
+            {
+                post.Encrypt(); 
+            }
+            else if (c=="2")
+            {               
+                post.Decrypt();  //解密
+            }
+            
+        
+            Console.Write("Vigenère Cipher = ");
+            for(int i = 0; i< a.Length; i++)
+                {   
+                    Console.Write(post.Code[i]);
+                }
+            Console.WriteLine('\n'+"press enter to continue");
+            Console.ReadLine();
+        }
+        static string repkey(string word,string key)
+        {
+            System.Text.StringBuilder key1 = new System.Text.StringBuilder(key);
+            for (int i=0; i<word.Length-1; i++)
+                {   
+                key1.Append(key);
+                }
+            return(key1.ToString());
+        }
+    }
+}
+
+
+#2. IfError.cs
+using System;
+
+namespace HW2
+{
+    public class IfError
+    {
+        public static bool iferror(byte[] a) 
+        {            
+            for (int j =0; j< a.Length; j++)
+            {
+                if ((a[j]>64 && a[j]<91) || (a[j]>96 && a[j]<123))
+                {
+                   continue; //處理非英文字母                   
+                }
+                else 
+                {
+                    return false;
+                }           
+            }
+            return true;
+        }
+
+    }
+}
+
+#3. ASCII.cs
+using System;
+
+namespace HW2
+{
+    public class ASCII
+    {
+        private string word;
+        private byte[] ascii;
+        private byte[] ascii1;
+        public ASCII (string w) //建構式
+        {
+            word = w;
+        }
+        public string Word 
+        {
+            get { return word;} //屬性
+        }
+        
+        public byte[] Ascii1
+        {
+            get { return ascii1;} //屬性
+        }
+
+        public byte[] Ascii   
+        {
+            get { return ascii;}  //屬性
+        }
+        public void ToASCII() //將明文轉為ASCII
+        {
+            ascii = new byte[word.Length];
+            for (int i=0; i< word.Length; i++){
+                //Console.WriteLine (chars[i]);
+                char[] chars = word.ToCharArray(); 
+                ascii[i] = Convert.ToByte(chars[i]);
+                }
+        }
+
+        public void KeyToASCII()//將KEY轉為ASCII
+        {
+            ascii1 = new byte[word.Length];
+            for (int i=0; i< word.Length; i++){
+                //Console.WriteLine (chars[i]);       
+                ascii1[i] = Convert.ToByte(word[i]);
+                if (ascii1[i]>96){  //因為KEY跟大小寫沒有關係，所以做此處理
+                    ascii1[i]-= 97;  //將不論大寫還是小寫都改為a=1開始
+                    }
+                else{
+                    ascii1[i]-=65;
+                }
+            }
+        }
+    }
+}
+
+#4. WordtoCode.cs
+using System;
+
+namespace HW2
+{
+    public class WordtoCode
+    {
+         private byte[] ascii1;
+         private byte[] ascii2;
+        public WordtoCode(byte[] a1,byte[] a2)
+        {
+            ascii1 = a1;
+            ascii2 = a2;
+        }
+         public byte[] Ascii1
+        {
+            get { return ascii1;}
+        } 
+        public byte[] Ascii2
+        {
+            get { return ascii2;}
+        }
+        private char[] code ;
+        public char[] Code
+        {
+            get { return code;}
+        }
+        public void Encrypt () 
+         {
+            code = new char[ascii1.Length];
+            for (int j =0; j< ascii1.Length; j++){
+                if (ascii1[j]>96 && ascii1[j]<123){ 
+                    code[j] = Convert.ToChar(((ascii1[j]-96+ascii2[j])%26)+96);
+                    } //處理小寫英文字母
+                else if (ascii1[j]>64 && ascii1[j]<91){
+                    code[j] = Convert.ToChar(((ascii1[j]-64+ascii2[j])%26)+64);
+                    } //處理大寫英文字母
+                }    
+         }
+        public void Decrypt () 
+         {
+            code = new char[ascii1.Length];
+            for (int j =0; j< ascii1.Length; j++){
+                    if (ascii1[j]>96 && ascii1[j]<123)
+                    { 
+                    code[j] = Convert.ToChar(((ascii1[j]-96-ascii2[j]+26)%26)+96);
+                    } //處理小寫英文字母
+                     else if (ascii1[j]>64 && ascii1[j]<91)
+                    {
+                    code[j] = Convert.ToChar(((ascii1[j]-64-ascii2[j]+26)%26)+64);
+                    } //處理大寫英文字母 
+                }                   
+            } 
+    }
+}
